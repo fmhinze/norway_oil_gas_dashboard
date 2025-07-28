@@ -1,6 +1,7 @@
 from dash import Output, Input
 import pandas as pd
 import plotly.express as px
+import numpy as np
 
 def register_callbacks(app, df):
     @app.callback(
@@ -59,7 +60,7 @@ def register_callbacks(app, df):
             title=f"{product} Production ({granularity.title()})"
         )
 
-        # Add gross and water cut if selected
+        # Add gross if selected
         if "show" in show_gross:
             # Gross line
             time_fig.add_scatter(
@@ -69,18 +70,24 @@ def register_callbacks(app, df):
                 mode="lines"
             )
 
-            # Water cut bar
-            ts_data["water_cut_pct"] = 100 * (ts_data["volume_gross"] - ts_data["volume_net"]) / ts_data["volume_gross"]
+            # Waste bar: 100 * (gross - net) / gross, but only if gross > 10
+            ts_data["waste_pct"] = np.where(
+                np.abs((ts_data["volume_gross"] - ts_data["volume_net"]) / ts_data["volume_gross"]) <= 1 ,
+                100 * (ts_data["volume_gross"] - ts_data["volume_net"]) / ts_data["volume_gross"],
+                0
+            )
+
+            # Add as bar chart
             time_fig.add_bar(
                 x=ts_data["date"],
-                y=ts_data["water_cut_pct"],
-                name="Water Cut (%)",
+                y=ts_data["waste_pct"],
+                name="Waste (%)",
                 yaxis="y2"
             )
 
             # Add second y-axis
             time_fig.update_layout(
-                yaxis2=dict(title="Water Cut (%)", overlaying="y", side="right")
+                yaxis2=dict(title="Waste (%)", overlaying="y", side="right")
             )
 
         # Shared layout
