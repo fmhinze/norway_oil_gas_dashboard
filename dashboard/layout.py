@@ -40,6 +40,30 @@ def serve_layout(df):
                     id="granularity-toggle",
                     style={"marginBottom": "10px"}
                 ),
+                html.Label("Units - Oil & liquids"),
+                dcc.RadioItems(
+                    options=[
+                        {"label": "Cubic meters", "value" : "sm3"},
+                        {"label": "Barrels", "value": "barrels"},
+                        {"label": "Tonnes of o.e.", "value": "tonnes of oil equivalent"},
+                    ],
+                    value="Barrels",
+                    id="unit-oil",
+                    style={"marginBottom": "10px"}
+                ),
+                html.Label("Units - Gas"),
+                dcc.RadioItems(
+                    options=[
+                        {"label": "Cubic meters", "value" : "sm3"},
+                        {"label": "Btu", "value": "Btu"},
+                        {"label": "Watt hours", "value": "watt hours"},
+                        {"label": "Cubic feet", "value": "cubic feet"},
+                        
+                    ],
+                    value="Watt hours",
+                    id="unit-gas",
+                    style={"marginBottom": "10px"}
+                ),
                 html.Label("Date Range"),
                 dcc.DatePickerRange(
                     id="date-filter",

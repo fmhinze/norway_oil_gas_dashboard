@@ -1,0 +1,78 @@
+{
+  "comment": "Base unit is MMSm3 (millions of standard cubic metres) as implied by the data. Conversion factors sourced from https://www.norskpetroleum.no/en/calculator/about-energy-calculator/",
+  "Oil": {
+    "sm3" : [
+        {"unit": "million sm3", "factor": 1},
+        {"unit": "thousand sm3", "factor": 1000},
+        {"unit": "sm3", "factor": 1000000}
+    ],
+    "barrels": [
+      {"unit": "MMbbl", "factor": 6.2898},
+      {"unit": "Mbbl", "factor": 6289.8},
+      {"unit": "bbl", "factor": 6289800}
+    ],
+    "tonnes of oil equivalent": [
+      {"unit": "MMtoe", "factor": 0.84},
+      {"unit": "Mtoe", "factor": 840},
+      {"unit": "toe", "factor": 840000}
+    ]
+  },
+  "Condesate": {
+    "disclaimer": "Using crude oil conversion factors. For illustration only. Only Sm3 numbers will be accurate.",
+    "sm3" : [
+        {"unit": "million sm3", "factor": 1},
+        {"unit": "thousand sm3", "factor": 1000},
+        {"unit": "sm3", "factor": 1000000}
+    ],    
+    "barrels": [
+      {"unit": "MMbbl", "factor": 6.2898},
+      {"unit": "Mbbl", "factor": 6289.8},
+      {"unit": "bbl", "factor": 6289800}
+    ],
+    "tonnes of oil equivalent": [
+      {"unit": "MMtoe", "factor": 0.84},
+      {"unit": "Mtoe", "factor": 840},
+      {"unit": "toe", "factor": 840000}
+    ]
+  },
+  "NGL": {
+    "disclaimer": "Using crude oil conversion factors. For illustration only. Only Sm3 numbers will be accurate.",
+    "sm3" : [
+        {"unit": "million sm3", "factor": 1},
+        {"unit": "thousand sm3", "factor": 1000},
+        {"unit": "sm3", "factor": 1000000}
+    ],    
+    "barrels": [
+      {"unit": "MMbbl", "factor": 6.2898},
+      {"unit": "Mbbl", "factor": 6289.8},
+      {"unit": "bbl", "factor": 6289800}
+    ],
+    "tonnes of oil equivalent": [
+      {"unit": "MMtoe", "factor": 0.84},
+      {"unit": "Mtoe", "factor": 840},
+      {"unit": "toe", "factor": 840000}
+    ]
+  },
+  "Gas": {
+    "sm3" : [
+        {"unit": "billion sm3", "factor": 1},
+        {"unit": "mllion sm3", "factor": 1000},
+        {"unit": "thousand sm3", "factor": 1000000}
+    ],
+    "Btu": [
+      {"unit": "MMBtu", "factor": 35315},
+      {"unit": "MBtu", "factor": 35.315},
+      {"unit": "Btu", "factor": 0.035315}
+    ],
+    "watt hours": [
+      {"unit": "GWh", "factor": 11.111},
+      {"unit": "MWh", "factor": 11111},
+      {"unit": "kWh", "factor": 11111000}
+    ],
+    "cubic feet": [
+      {"unit": "Bcf", "factor": 35.3147},
+      {"unit": "Mcf", "factor": 35314.7},
+      {"unit": "cf", "factor": 35314700}
+    ]
+  }
+}

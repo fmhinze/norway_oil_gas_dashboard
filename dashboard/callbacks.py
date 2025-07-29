@@ -23,6 +23,9 @@ def register_callbacks(app, df):
             (df["date"] <= pd.to_datetime(end_date))
         )
         filtered = df[mask]
+                
+        # apply unit conversion
+        product_units = df.groupby("product")["unit"].first().to_dict()
         
         # Apply field filter if selected
         if selected_field:
@@ -70,7 +73,7 @@ def register_callbacks(app, df):
                 mode="lines"
             )
 
-            # Waste bar: 100 * (gross - net) / gross, but only if gross > 10
+            # Waste bar: 100 * (gross - net) / gross, but only if diff > 1
             ts_data["waste_pct"] = np.where(
                 np.abs((ts_data["volume_gross"] - ts_data["volume_net"]) / ts_data["volume_gross"]) <= 1 ,
                 100 * (ts_data["volume_gross"] - ts_data["volume_net"]) / ts_data["volume_gross"],
