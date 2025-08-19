@@ -47,7 +47,7 @@ def serve_layout(df):
                         {"label": "Barrels", "value": "barrels"},
                         {"label": "Tonnes of o.e.", "value": "tonnes of oil equivalent"},
                     ],
-                    value="Barrels",
+                    value="barrels",
                     id="unit-oil",
                     style={"marginBottom": "10px"}
                 ),
@@ -60,7 +60,7 @@ def serve_layout(df):
                         {"label": "Cubic feet", "value": "cubic feet"},
                         
                     ],
-                    value="Watt hours",
+                    value="watt hours",
                     id="unit-gas",
                     style={"marginBottom": "10px"}
                 ),

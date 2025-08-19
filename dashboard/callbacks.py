@@ -3,6 +3,11 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 
+import json
+
+with open("processed_data/unit_conversion.json", "r") as f:
+    UNIT_CONVERSIONS = json.load(f)
+
 def register_callbacks(app, df):
     @app.callback(
         [Output("time-series", "figure"),
@@ -13,9 +18,12 @@ def register_callbacks(app, df):
          Input("date-filter", "end_date"),
          Input("granularity-toggle", "value"),
          Input("time-series", "clickData"),
-         Input("field-filter", "value")]
+         Input("field-filter", "value"),
+         Input("unit-oil", "value"),
+         Input("unit-gas", "value")]
     )
-    def update_graphs(product, show_gross, start_date, end_date, granularity, clickData, selected_field):
+    def update_graphs(product, show_gross, start_date, end_date, granularity, 
+                      clickData, selected_field, unit_oil, unit_gas):
         # === 1. FILTERING ===
         mask = (
             (df["product"] == product) &
@@ -23,9 +31,6 @@ def register_callbacks(app, df):
             (df["date"] <= pd.to_datetime(end_date))
         )
         filtered = df[mask]
-                
-        # apply unit conversion
-        product_units = df.groupby("product")["unit"].first().to_dict()
         
         # Apply field filter if selected
         if selected_field:
@@ -55,13 +60,36 @@ def register_callbacks(app, df):
                 .sum()
                 .reset_index()
             )
+            
+        # Unit Conversion
+        def get_conversion_factor(product, unit_choice, max_value):
+            if product in UNIT_CONVERSIONS:
+                for entry in UNIT_CONVERSIONS[product][unit_choice]:
+                    if max_value*entry["factor"] > 1:
+                        break
+                    
+                # if condition fails, samllest is picked
+                return entry["factor"], entry["unit"] 
+            else:
+                # to avoid confusion
+                return 0, None
+            
+        
+        unit_choice = unit_oil if product in ["Oil", "Condesate", "NGL"] else unit_gas
+        factor, unit_label = get_conversion_factor(product, unit_choice, ts_data["volume_net"].max())
+            
+        ts_data["volume_net"] *= factor
+        if "show" in show_gross:
+            ts_data["volume_gross"] *= factor
+        
+        y_label = f"Net Production ({unit_label})" if unit_label else "Net Production"
 
-        # Always show net
         time_fig = px.line(
             ts_data, x="date", y="volume_net",
-            labels={"volume_net": "Net Production", "date": "Date"},
+            labels={"volume_net": y_label, "date": "Date"},
             title=f"{product} Production ({granularity.title()})"
         )
+
 
         # Add gross if selected
         if "show" in show_gross:
@@ -154,6 +182,7 @@ def register_callbacks(app, df):
             map_df["date_str"] = selected_date.strftime("%Y-%m")
 
         # Create styling columns
+        map_df["volume_net"] *= factor
         map_df["opacity_val"] = map_df["field"].apply(
             lambda f: 0.5 if (not selected_field or f == selected_field) else 0.2
         )

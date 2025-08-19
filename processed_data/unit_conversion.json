@@ -17,7 +17,7 @@
       {"unit": "toe", "factor": 840000}
     ]
   },
-  "Condesate": {
+  "Condensate": {
     "disclaimer": "Using crude oil conversion factors. For illustration only. Only Sm3 numbers will be accurate.",
     "sm3" : [
         {"unit": "million sm3", "factor": 1},
