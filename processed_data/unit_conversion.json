@@ -12,9 +12,9 @@
       {"unit": "bbl", "factor": 6289800}
     ],
     "tonnes of oil equivalent": [
-      {"unit": "MMtoe", "factor": 0.84},
-      {"unit": "Mtoe", "factor": 840},
-      {"unit": "toe", "factor": 840000}
+      {"unit": "million t.o.e", "factor": 0.84},
+      {"unit": "thousand t.o.e", "factor": 840},
+      {"unit": "t.o.e", "factor": 840000}
     ]
   },
   "Condensate": {
@@ -30,9 +30,9 @@
       {"unit": "bbl", "factor": 6289800}
     ],
     "tonnes of oil equivalent": [
-      {"unit": "MMtoe", "factor": 0.84},
-      {"unit": "Mtoe", "factor": 840},
-      {"unit": "toe", "factor": 840000}
+      {"unit": "million t.o.e", "factor": 0.84},
+      {"unit": "thousand t.o.e", "factor": 840},
+      {"unit": "t.o.e", "factor": 840000}
     ]
   },
   "NGL": {
@@ -48,9 +48,9 @@
       {"unit": "bbl", "factor": 6289800}
     ],
     "tonnes of oil equivalent": [
-      {"unit": "MMtoe", "factor": 0.84},
-      {"unit": "Mtoe", "factor": 840},
-      {"unit": "toe", "factor": 840000}
+      {"unit": "million t.o.e", "factor": 0.84},
+      {"unit": "thousand t.o.e", "factor": 840},
+      {"unit": "t.o.e", "factor": 840000}
     ]
   },
   "Gas": {
@@ -73,6 +73,11 @@
       {"unit": "Bcf", "factor": 35.3147},
       {"unit": "Mcf", "factor": 35314.7},
       {"unit": "cf", "factor": 35314700}
+    ],
+    "tonnes of oil equivalent": [
+      {"unit": "million t.o.e", "factor": 0.860},
+      {"unit": "thousand t.o.e", "factor": 860},
+      {"unit": "t.o.e", "factor": 860000}
     ]
   }
 }

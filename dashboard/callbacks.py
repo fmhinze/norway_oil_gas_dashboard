@@ -5,13 +5,23 @@ import numpy as np
 
 import json
 
+COLOUR_MAP = {
+    "Oil" : "#03045e",
+    "NGL" : "#0077b6",
+    "Condensate" : "#00b4d8",
+    "Gas": "#90e0ef"
+    
+}
+
 with open("processed_data/unit_conversion.json", "r") as f:
     UNIT_CONVERSIONS = json.load(f)
 
 def register_callbacks(app, df):
     @app.callback(
         [Output("time-series", "figure"),
-         Output("map-view", "figure")],
+         Output("map-view", "figure"),
+         Output("field-pie-chart", "figure"),
+         Output("field-mini-timeseries", "figure")],
         [Input("product-filter", "value"),
          Input("show-gross-toggle", "value"),
          Input("date-filter", "start_date"),
@@ -61,21 +71,10 @@ def register_callbacks(app, df):
                 .reset_index()
             )
             
-        # Unit Conversion
-        def get_conversion_factor(product, unit_choice, max_value):
-            if product in UNIT_CONVERSIONS:
-                for entry in UNIT_CONVERSIONS[product][unit_choice]:
-                    if max_value*entry["factor"] > 1:
-                        break
-                    
-                # if condition fails, samllest is picked
-                return entry["factor"], entry["unit"] 
-            else:
-                # to avoid confusion
-                return 0, None
+
             
         
-        unit_choice = unit_oil if product in ["Oil", "Condesate", "NGL"] else unit_gas
+        unit_choice = unit_oil if product in ["Oil", "Condensate", "NGL"] else unit_gas
         factor, unit_label = get_conversion_factor(product, unit_choice, ts_data["volume_net"].max())
             
         ts_data["volume_net"] *= factor
@@ -219,5 +218,92 @@ def register_callbacks(app, df):
             showlegend=False
         )
 
+        pie_fig = get_field_product_mix(df, selected_field, UNIT_CONVERSIONS)
+        mini_ts_fig = get_field_stacked_timeseries(df, selected_field, granularity, UNIT_CONVERSIONS)
+        
+        return time_fig, map_fig, pie_fig, mini_ts_fig
+    
+    
+def get_field_product_mix(df, selected_field, unit_conversions):
+    field_df = df[df["field"] == selected_field].copy()
+    field_df = field_df.groupby("product")["volume_net"].sum().reset_index()
 
-        return time_fig, map_fig
+    oil_eq = []
+    for _, row in field_df.iterrows():
+        product = row["product"]
+        vol = row["volume_net"]
+        try:
+            factor, _ = get_conversion_factor(product, "tonnes of oil equivalent",0)
+        except KeyError:
+            factor = 1  # fallback
+        oil_eq.append(vol * factor)
+
+    field_df["oil_equivalent"] = oil_eq
+    pie_fig = px.pie(
+        field_df,
+        names="product",
+        color="product",
+        values="oil_equivalent",
+        title=f"{selected_field}: Product Mix (t.o.e)",
+        hole=0.4,
+        color_discrete_map=COLOUR_MAP
+    )
+    
+    pie_fig.update_layout(margin=dict(t=30, b=0, l=0, r=0))
+    return pie_fig
+
+
+def get_field_stacked_timeseries(df, selected_field, granularity, unit_conversions):
+    field_df = df[df["field"] == selected_field].copy()
+    field_df = field_df.copy()
+
+    def oil_equiv(row):
+        product = row["product"]
+        try:
+            conversions = unit_conversions[product]["tonnes of oil equivalent"]
+            if isinstance(conversions, list) and len(conversions) > 0:
+                factor = conversions[0]["factor"]
+            else:
+                factor = 1
+        except (KeyError, IndexError, TypeError):
+            factor = 1
+        return row["volume_net"] * factor
+
+    field_df["oil_equivalent"] = field_df.apply(oil_equiv, axis=1)
+
+    if granularity == "annual":
+        field_df["year"] = field_df["date"].dt.year
+        group = field_df.groupby(["year", "product"])["oil_equivalent"].sum().reset_index()
+        group = group.rename(columns={"year": "date"})
+        group["date"] = pd.to_datetime(group["date"], format="%Y")
+    else:
+        group = field_df.groupby(["date", "product"])["oil_equivalent"].sum().reset_index()
+
+    mini_fig = px.area(
+        group,
+        x="date",
+        y="oil_equivalent",
+        color="product",
+        title=f"{selected_field}: Stacked Production (t.o.e)",
+        color_discrete_map=COLOUR_MAP,
+        category_orders={"product": ["Oil", "NGL", "Condensate", "Gas"]}
+    )
+    mini_fig.update_layout(
+        margin=dict(t=30, b=30, l=30, r=10),
+        legend=dict(orientation="h", y=-0.2)
+    )
+    return mini_fig
+
+
+# Unit Conversion
+def get_conversion_factor(product, unit_choice, max_value):
+    if product in UNIT_CONVERSIONS:
+        for entry in UNIT_CONVERSIONS[product][unit_choice]:
+            if max_value*entry["factor"] > 1:
+                break
+            
+        # if condition fails, samllest is picked
+        return entry["factor"], entry["unit"] 
+    else:
+        # to avoid confusion
+        return 0, None

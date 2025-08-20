@@ -97,13 +97,16 @@ def serve_layout(df):
                         "padding": "10px"
                     })
                 ], style={
-                    "display": "none"  # placeholder for future content
+                    "width": "40%",
+                    "padding": "0 10px",
+                    "boxSizing": "border-box",
+                    "borderLeft": "1px solid #ccc",
                 })
 
             ], style={
-                "width": "80%",
-                "padding": "0px",
-                "boxSizing": "border-box"
+                "display": "flex",
+                "height": "70vh",
+                "width": "80%"
             })
 
         ], style={
