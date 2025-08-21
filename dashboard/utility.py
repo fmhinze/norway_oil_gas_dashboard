@@ -1,15 +1,16 @@
-import json
+def human_format(num, precision=2):
+    """
+    Convert large numbers to a human-readable string with suffixes
+    (k, M, B, T).
+    """
+    if num is None:
+        return "-"
+    num = float(num)
+    magnitude = 0
+    units = ["", "k", "M", "B", "T"]
 
+    while abs(num) >= 1000 and magnitude < len(units) - 1:
+        magnitude += 1
+        num /= 1000.0
 
-with open("conversion_table.json") as f:
-    conversion_factors = json.load(f)
-
-
-def get_scaled_unit(product, category, value):
-    units = conversion_factors[product][category]
-    for u in units:
-        converted = value * u["factor"]
-        if converted >= 1 and converted :
-            return converted, u["unit"]
-    # If even the smallest scale is < 1
-    return value * units[-1]["factor"], units[-1]["unit"]
+    return f"{num:.{precision}f} {units[magnitude]}".strip()

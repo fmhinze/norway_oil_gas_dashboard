@@ -1,131 +1,204 @@
 from dash import html, dcc
-import pandas as pd
+import plotly.io as pio
+import dash_mantine_components as dmc
+
+
+pio.templates.default = "plotly_dark"
 
 def serve_layout(df):
-    return html.Div([
-        
+    return html.Div(
+        [
+            #to get the screen size.
+            dcc.Store(id="window-height", storage_type="session"),
+            
+            html.Div(
+                [
+                    dmc.Paper(
+                        radius="sm",
+                        withBorder=True,
+                        children=[
+                            dmc.Button("Selections", id="drawer-button", size="xs")
+                        ],
+                        w="100%",
+                    ),
+                ],
+            ),
 
-        html.Div([  # Main horizontal container: sidebar + main content
-            html.Div([  # Sidebar
-                html.H2("Norwegian Oil & Gas", style={"margin": "10px 0"}),
-                html.Label("Field"),
-                dcc.Dropdown(
-                    options=[{"label": f, "value": f} for f in sorted(df["field"].unique())],
-                    id="field-filter",
-                    placeholder="Select a field (optional)",
-                    value=None,
-                    style={"marginBottom": "10px"}
-                ),
-                html.Label("Product"),
-                dcc.Dropdown(
-                    options=[{"label": p, "value": p} for p in df["product"].unique()],
-                    value="Oil",
-                    id="product-filter",
-                    style={"marginBottom": "10px"}
-                ),
-                html.Label("Gross Comparison"),
-                dcc.Checklist(
-                    options=[{"label": " Show Gross & Waste", "value": "show"}],
-                    value=[],  # default is off
-                    id="show-gross-toggle",
-                    style={"marginBottom": "10px"}
-                ),
-                html.Label("Display"),
-                dcc.RadioItems(
-                    options=[
-                        {"label": "Monthly", "value": "monthly"},
-                        {"label": "Annual", "value": "annual"},
-                    ],
-                    value="monthly",
-                    id="granularity-toggle",
-                    style={"marginBottom": "10px"}
-                ),
-                html.Label("Units - Oil & liquids"),
-                dcc.RadioItems(
-                    options=[
-                        {"label": "Cubic meters", "value" : "sm3"},
-                        {"label": "Barrels", "value": "barrels"},
-                        {"label": "Tonnes of o.e.", "value": "tonnes of oil equivalent"},
-                    ],
-                    value="barrels",
-                    id="unit-oil",
-                    style={"marginBottom": "10px"}
-                ),
-                html.Label("Units - Gas"),
-                dcc.RadioItems(
-                    options=[
-                        {"label": "Cubic meters", "value" : "sm3"},
-                        {"label": "Btu", "value": "Btu"},
-                        {"label": "Watt hours", "value": "watt hours"},
-                        {"label": "Cubic feet", "value": "cubic feet"},
-                        
-                    ],
-                    value="watt hours",
-                    id="unit-gas",
-                    style={"marginBottom": "10px"}
-                ),
-                html.Label("Date Range"),
-                dcc.DatePickerRange(
-                    id="date-filter",
-                    start_date=df["date"].min(),
-                    end_date=df["date"].max(),
-                    display_format="YYYY-MM",
-                    style={"marginBottom": "10px"}
-                ),
-            ], style={
-                "width": "20%",
-                "padding": "0px",
-                "height": "70vh",
-                "overflowY": "auto",
-                "boxSizing": "border-box",
-                "borderRight": "1px solid #ccc"
-            }),
+            html.Div(
+                [
+                    dmc.Box(
+                        [
+                            dmc.Drawer(
+                                title="Dashboar Settings",
+                                id="drawer",
+                                padding="md",
+                                children=[
+                                    # Select oil/gas field
+                                    dmc.Select(
+                                        id="field-filter",
+                                        label="Field",
+                                        placeholder="Select a field (optional)",
+                                        value=None,
+                                        data=[{"label": f, "value": f} for f in sorted(df["field"].unique())],
+                                        style={"marginBottom": "10px"},
+                                        size="sm",
+                                        searchable=True,
+                                        #nothingFound="No field found",
+                                        variant="filled",
+                                    ),
+                                    
+                                    #Select what products to look at
+                                    dmc.Select(
+                                        label="Product",
+                                        id="product-filter",
+                                        data=[{"label": p, "value": p} for p in df["product"].unique()],
+                                        value="Oil",
+                                        clearable=False,
+                                        style={"marginBottom": 10}
+                                    ),
+                                    
+                                    dmc.RadioGroup(
+                                        id="granularity-toggle",
+                                        children = dmc.Group(
+                                            [
+                                                dmc.Radio("Annual", value="annual"),
+                                                dmc.Radio("Monthly", value="monthly")
+                                            ],
+                                            my = 10
+                                        ),
+                                        value = "annual",
+                                        label = "Select granualrity",
+                                        size = "sm",
+                                        my = 10,
+                                    ),
+                                    dmc.RadioGroup(
+                                        id="unit-oil",
+                                        label="Units – Oil & liquids",
+                                        value="sm3",
+                                        size="xs",
+                                        my=10,
+                                        children=dmc.Group(
+                                            [
+                                                dmc.Tooltip(
+                                                    label="Standardised cubic meters",
+                                                    children= dmc.Radio("Sm3", value="sm3"),
+                                                ),
+                                                dmc.Tooltip(
+                                                    label="Barrels",
+                                                    children= dmc.Radio("bbl", value="barrels"),
+                                                ),
+                                                dmc.Tooltip(
+                                                    label="Tonnes of oil equivalent",
+                                                    children= dmc.Radio("t.o.e.", value="tonnes of oil equivalent"),
+                                                ),
+                                            ],
+                                            my=10
+                                        )
+                                    ),
+                                    dmc.RadioGroup(
+                                        id="unit-gas",
+                                        label="Units – Gas",
+                                        value="sm3",
+                                        size="xs",
+                                        my=10,
+                                        children=dmc.Group(
+                                            [
+                                                dmc.Tooltip(
+                                                    label="Standardised cubic meters",
+                                                    children= dmc.Radio("Sm3", value="sm3"),
+                                                ),
+                                                dmc.Tooltip(
+                                                    label="British thermal unit",
+                                                    children= dmc.Radio("Btu", value="Btu"),
+                                                ),
+                                                dmc.Tooltip(
+                                                    label="Watt hours",
+                                                    children= dmc.Radio("Wh", value="Watt hours"),
+                                                ),
+                                                dmc.Tooltip(
+                                                    label="Cubic feet",
+                                                    children= dmc.Radio("cf", value="cubic feet"),
+                                                ),
+                                            ],
+                                            my=10
+                                        )
+                                    ),
 
-            html.Div([  # Map + placeholder panel
-                html.Div([
-                    dcc.Graph(id="map-view", style={
-                        "height": "70vh",
-                        "margin": "0px"
-                    }),
-                ], style={
+                                    html.Div(
+                                        dmc.MonthPickerInput(
+                                            id={"type": "date-picker", "subtype": "month"},
+                                            type="range",
+                                            label="Date Range (Monthly)",
+                                            value=[df["date"].min(), df["date"].max()]
+                                        ),
+                                        id="month-picker-container",
+                                    ),
+
+                                    html.Div(
+                                        dmc.YearPickerInput(
+                                            id={"type": "date-picker", "subtype": "year"},
+                                            type="range",
+                                            label="Date Range (Annual)",
+                                            value=[df["date"].min(), df["date"].max()]
+                                        ),
+                                        id="year-picker-container",
+                                    ),
+                                ]
+                            ),
+                            dmc.Paper(
+                                children=[html.Div(id="field-pie-chart")],
+                                style={"height": "40%", "marginBottom": "10px", "padding": 10}
+                            ),
+
+                        ],
+                        h = "65%",
+                        w = "80%"
+                    ),
+                    
+                    # Map Container
+                    dmc.Box(
+                        dcc.Graph(
+                            id="map-view",
+                            style={
+                                "height": "70vh",
+                                "margin": "0px",
+                                "backgroundColor": "#1e1e1e00",  # dark background
+                                "border": "1px solid #444",
+                                "borderRadius": "5px",
+                                "padding": "0px"
+                            },
+                            config={
+                                "displayModeBar": "hover",   # Hide the floating toolbar
+                                "responsive": True
+                            }
+                        ),
+                        w = "20%",
+                        h = "65%"
+                    ),
+                ], 
+                style = {
+                    "display": "flex",
+                    "height": "65%",
+                    "width": "100%"
+                }
+            ),
+            
+            html.Div(
+                [
+                    dmc.Box(
+                            [
+                                html.Div(id="field-mini-timeseries")
+                            ],
+                            w = "100%",
+                            h = "30%"
+                        )
+                ],
+                style = {
+                    "display": "flex",
+                    "height": "30%",
                     "width": "100%",
-                    "boxSizing": "border-box"
-                }),
-
-                html.Div([
-                    html.Div("← Future visualisations here", style={
-                        "padding": "10px"
-                    })
-                ], style={
-                    "width": "40%",
-                    "padding": "0 10px",
-                    "boxSizing": "border-box",
-                    "borderLeft": "1px solid #ccc",
-                })
-
-            ], style={
-                "display": "flex",
-                "height": "70vh",
-                "width": "80%"
-            })
-
-        ], style={
-            "display": "flex",
-            "height": "70vh",
-            "width": "100%"
-        }),
-
-        html.Div([
-            dcc.Graph(id="time-series", style={
-                "height": "30vh",
-                "margin": "0px"
-            })
-        ], style={
-            "width": "100%"
-        })
-
-    ], style={
-        "height": "100vh",
-        "boxSizing": "border-box",
-        "padding": "0 10px"
-    })
+                    "padding" : "15px"
+                }
+            )
+        ]
+    )
