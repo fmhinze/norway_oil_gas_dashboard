@@ -38,10 +38,10 @@ def serve_layout(df):
                                         id="field-filter",
                                         label="Field",
                                         placeholder="Select a field (optional)",
-                                        value=None,
+                                        value="All",
                                         data=[
                                             {"label": f, "value": f}
-                                            for f in sorted(df["field"].unique())
+                                            for f in ["All"] + sorted(df["field"].unique())
                                         ],
                                         style={"marginBottom": "10px"},
                                         size="sm",
@@ -50,14 +50,14 @@ def serve_layout(df):
                                         variant="filled",
                                     ),
                                     # Select what products to look at
-                                    dmc.Select(
-                                        label="Product",
+                                    dmc.MultiSelect(
+                                        label="Select Products",
                                         id="product-filter",
                                         data=[
                                             {"label": p, "value": p}
                                             for p in df["product"].unique()
                                         ],
-                                        value="Oil",
+                                        value=list(df["product"].unique()),
                                         clearable=False,
                                         style={"marginBottom": 10},
                                     ),
@@ -215,6 +215,7 @@ def serve_layout(df):
                         w="100%",
                         h="30%",
                         p="10px",
+                        px = "5%",
                         bd="1px solid dark.4",
                     )
                 ],
