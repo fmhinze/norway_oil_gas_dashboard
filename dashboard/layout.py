@@ -5,27 +5,27 @@ import dash_mantine_components as dmc
 
 pio.templates.default = "plotly_dark"
 
+
 def serve_layout(df):
     return html.Div(
         [
-            #to get the screen size.
+            # to get the screen size.
             dcc.Store(id="window-height", storage_type="session"),
-            
             html.Div(
                 [
-                    dmc.Paper(
-                        radius="sm",
-                        withBorder=True,
-                        children=[
-                            dmc.Button("Selections", id="drawer-button", size="xs")
-                        ],
-                        w="100%",
+                    # AREA TOP LEFT - Info & Settings
+                    dmc.Box(
+                        dmc.Center(
+                            children=[
+                                dmc.Button("Selections", id="drawer-button", size="m")
+                            ],
+                        ),
+                        w="20%",
+                        mah="70%",
+                        mih="70%",
+                        p="10px",
+                        bd="1px solid dark.4",
                     ),
-                ],
-            ),
-
-            html.Div(
-                [
                     dmc.Box(
                         [
                             dmc.Drawer(
@@ -39,37 +39,41 @@ def serve_layout(df):
                                         label="Field",
                                         placeholder="Select a field (optional)",
                                         value=None,
-                                        data=[{"label": f, "value": f} for f in sorted(df["field"].unique())],
+                                        data=[
+                                            {"label": f, "value": f}
+                                            for f in sorted(df["field"].unique())
+                                        ],
                                         style={"marginBottom": "10px"},
                                         size="sm",
                                         searchable=True,
-                                        #nothingFound="No field found",
+                                        # nothingFound="No field found",
                                         variant="filled",
                                     ),
-                                    
-                                    #Select what products to look at
+                                    # Select what products to look at
                                     dmc.Select(
                                         label="Product",
                                         id="product-filter",
-                                        data=[{"label": p, "value": p} for p in df["product"].unique()],
+                                        data=[
+                                            {"label": p, "value": p}
+                                            for p in df["product"].unique()
+                                        ],
                                         value="Oil",
                                         clearable=False,
-                                        style={"marginBottom": 10}
+                                        style={"marginBottom": 10},
                                     ),
-                                    
                                     dmc.RadioGroup(
                                         id="granularity-toggle",
-                                        children = dmc.Group(
+                                        children=dmc.Group(
                                             [
                                                 dmc.Radio("Annual", value="annual"),
-                                                dmc.Radio("Monthly", value="monthly")
+                                                dmc.Radio("Monthly", value="monthly"),
                                             ],
-                                            my = 10
+                                            my=10,
                                         ),
-                                        value = "annual",
-                                        label = "Select granualrity",
-                                        size = "sm",
-                                        my = 10,
+                                        value="annual",
+                                        label="Select granualrity",
+                                        size="sm",
+                                        my=10,
                                     ),
                                     dmc.RadioGroup(
                                         id="unit-oil",
@@ -81,19 +85,26 @@ def serve_layout(df):
                                             [
                                                 dmc.Tooltip(
                                                     label="Standardised cubic meters",
-                                                    children= dmc.Radio("Sm3", value="sm3"),
+                                                    children=dmc.Radio(
+                                                        "Sm3", value="sm3"
+                                                    ),
                                                 ),
                                                 dmc.Tooltip(
                                                     label="Barrels",
-                                                    children= dmc.Radio("bbl", value="barrels"),
+                                                    children=dmc.Radio(
+                                                        "bbl", value="barrels"
+                                                    ),
                                                 ),
                                                 dmc.Tooltip(
                                                     label="Tonnes of oil equivalent",
-                                                    children= dmc.Radio("t.o.e.", value="tonnes of oil equivalent"),
+                                                    children=dmc.Radio(
+                                                        "t.o.e.",
+                                                        value="tonnes of oil equivalent",
+                                                    ),
                                                 ),
                                             ],
-                                            my=10
-                                        )
+                                            my=10,
+                                        ),
                                     ),
                                     dmc.RadioGroup(
                                         id="unit-gas",
@@ -105,56 +116,73 @@ def serve_layout(df):
                                             [
                                                 dmc.Tooltip(
                                                     label="Standardised cubic meters",
-                                                    children= dmc.Radio("Sm3", value="sm3"),
+                                                    children=dmc.Radio(
+                                                        "Sm3", value="sm3"
+                                                    ),
                                                 ),
                                                 dmc.Tooltip(
                                                     label="British thermal unit",
-                                                    children= dmc.Radio("Btu", value="Btu"),
+                                                    children=dmc.Radio(
+                                                        "Btu", value="Btu"
+                                                    ),
                                                 ),
                                                 dmc.Tooltip(
                                                     label="Watt hours",
-                                                    children= dmc.Radio("Wh", value="Watt hours"),
+                                                    children=dmc.Radio(
+                                                        "Wh", value="Watt hours"
+                                                    ),
                                                 ),
                                                 dmc.Tooltip(
                                                     label="Cubic feet",
-                                                    children= dmc.Radio("cf", value="cubic feet"),
+                                                    children=dmc.Radio(
+                                                        "cf", value="cubic feet"
+                                                    ),
                                                 ),
                                             ],
-                                            my=10
-                                        )
+                                            my=10,
+                                        ),
                                     ),
-
                                     html.Div(
                                         dmc.MonthPickerInput(
-                                            id={"type": "date-picker", "subtype": "month"},
+                                            id={
+                                                "type": "date-picker",
+                                                "subtype": "month",
+                                            },
                                             type="range",
                                             label="Date Range (Monthly)",
-                                            value=[df["date"].min(), df["date"].max()]
+                                            value=[df["date"].min(), df["date"].max()],
                                         ),
                                         id="month-picker-container",
                                     ),
-
                                     html.Div(
                                         dmc.YearPickerInput(
-                                            id={"type": "date-picker", "subtype": "year"},
+                                            id={
+                                                "type": "date-picker",
+                                                "subtype": "year",
+                                            },
                                             type="range",
                                             label="Date Range (Annual)",
-                                            value=[df["date"].min(), df["date"].max()]
+                                            value=[df["date"].min(), df["date"].max()],
                                         ),
                                         id="year-picker-container",
                                     ),
-                                ]
+                                ],
                             ),
                             dmc.Paper(
                                 children=[html.Div(id="field-pie-chart")],
-                                style={"height": "40%", "marginBottom": "10px", "padding": 10}
+                                style={
+                                    "height": "40%",
+                                    "marginBottom": "10px",
+                                    "padding": 10,
+                                },
                             ),
-
                         ],
-                        h = "65%",
-                        w = "80%"
+                        mih="70%",
+                        mah="70%",
+                        w="60%",
+                        p="10px",
+                        bd="1px solid dark.4",
                     ),
-                    
                     # Map Container
                     dmc.Box(
                         dcc.Graph(
@@ -165,40 +193,36 @@ def serve_layout(df):
                                 "backgroundColor": "#1e1e1e00",  # dark background
                                 "border": "1px solid #444",
                                 "borderRadius": "5px",
-                                "padding": "0px"
+                                "padding": "0px",
                             },
                             config={
-                                "displayModeBar": "hover",   # Hide the floating toolbar
-                                "responsive": True
-                            }
+                                "displayModeBar": "hover",  # Hide the floating toolbar
+                                "responsive": True,
+                            },
                         ),
-                        w = "20%",
-                        h = "65%"
+                        w="20%",
+                        h="70%",
+                        p="10px",
+                        bd="1px solid dark.4",
                     ),
-                ], 
-                style = {
-                    "display": "flex",
-                    "height": "65%",
-                    "width": "100%"
-                }
+                ],
+                style={"display": "flex", "height": "70%", "width": "100%"},
             ),
-            
             html.Div(
                 [
                     dmc.Box(
-                            [
-                                html.Div(id="field-mini-timeseries")
-                            ],
-                            w = "100%",
-                            h = "30%"
-                        )
+                        [html.Div(id="field-mini-timeseries")],
+                        w="100%",
+                        h="30%",
+                        p="10px",
+                        bd="1px solid dark.4",
+                    )
                 ],
-                style = {
+                style={
                     "display": "flex",
                     "height": "30%",
                     "width": "100%",
-                    "padding" : "15px"
-                }
-            )
+                },
+            ),
         ]
     )
