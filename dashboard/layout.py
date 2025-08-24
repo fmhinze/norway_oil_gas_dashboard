@@ -15,9 +15,10 @@ def serve_layout(df):
                 [
                     # AREA TOP LEFT - Info & Settings
                     dmc.Box(
-                        dmc.Center(
+                        dmc.Stack(
                             children=[
-                                dmc.Button("Selections", id="drawer-button", size="m")
+                                dmc.Button("Selections", id="drawer-button", size="m"),
+                                dmc.Text("Space for non-numerical data. \n Comming soon...")
                             ],
                         ),
                         w="20%",
@@ -168,14 +169,14 @@ def serve_layout(df):
                                     ),
                                 ],
                             ),
-                            dmc.Paper(
-                                children=[html.Div(id="field-pie-chart")],
-                                style={
-                                    "height": "40%",
-                                    "marginBottom": "10px",
-                                    "padding": 10,
-                                },
-                            ),
+                            dmc.Grid(
+                                children = [
+                                    card_for_product("pie-chart-oil", "Oil"),
+                                    card_for_product("pie-chart-gas", "Gas"),
+                                    card_for_product("pie-chart-ngl", "NGL"),
+                                    card_for_product("pie-chart-condensate", "Condensate")
+                                ]
+                            )
                         ],
                         mih="70%",
                         mah="70%",
@@ -208,22 +209,41 @@ def serve_layout(df):
                 ],
                 style={"display": "flex", "height": "70%", "width": "100%"},
             ),
-            html.Div(
+            dmc.Box(
                 [
-                    dmc.Box(
-                        [html.Div(id="field-mini-timeseries")],
-                        w="100%",
-                        h="30%",
-                        p="10px",
-                        px = "5%",
-                        bd="1px solid dark.4",
+                    dcc.Graph(id="field-mini-timeseries", 
+                        style={
+                        "height": "30vh",
+                        "margin": "0px"
+                        }
                     )
                 ],
-                style={
-                    "display": "flex",
-                    "height": "30%",
-                    "width": "100%",
-                },
+                w = "100%",
+                h = "30%"
             ),
         ]
     )
+
+
+def card_for_product(pie_chart_id, product):
+    
+    card = dmc.Center(
+        children=[
+            dmc.Stack(
+                children=[
+                    dmc.Title(product),
+                    dmc.Paper(
+                        children=[html.Div(id=pie_chart_id)],
+                    ),    
+                ]
+            ),  
+        ],
+        mih = "50%",
+        mah = "50%",
+        miw = "50%",
+        maw = "50%",
+        p="5px",
+        bd="1px solid dark.4",
+    )
+    
+    return card

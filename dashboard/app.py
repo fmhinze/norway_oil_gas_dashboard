@@ -4,7 +4,7 @@ from layout import serve_layout
 from callbacks import register_callbacks
 import dash_mantine_components as dmc
 
-df = load_data()
+df, df_reserves = load_data()
 
 theme={
     "primaryColor": "blue",
@@ -34,7 +34,7 @@ dash.clientside_callback(
 )
 
 
-register_callbacks(app, df)
+register_callbacks(app, df, df_reserves)
 
 if __name__ == "__main__":
     app.run(debug=True)

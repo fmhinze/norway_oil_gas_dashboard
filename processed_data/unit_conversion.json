@@ -64,7 +64,7 @@
       {"unit": "MBtu", "factor": 35.315},
       {"unit": "Btu", "factor": 0.035315}
     ],
-    "watt hours": [
+    "Watt hours": [
       {"unit": "GWh", "factor": 11.111},
       {"unit": "MWh", "factor": 11111},
       {"unit": "kWh", "factor": 11111000}

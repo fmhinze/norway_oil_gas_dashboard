@@ -4,7 +4,6 @@ import plotly.express as px
 import numpy as np
 import dash_mantine_components as dmc
 import json
-
 from utility import human_format, custom_round
 
 # ========== CONSTANTS ==========
@@ -17,6 +16,9 @@ COLOUR_MAP = {
 
 with open("processed_data/unit_conversion.json", "r") as f:
     UNIT_CONVERSIONS = json.load(f)
+    
+RESERVE_ORG_PREFIX = "fldRecoverable"
+RESERVE_REMAIN_PREFIX = "fldRemaining"
 
 # ========== UTILITY FUNCTIONS ==========
 
@@ -38,113 +40,192 @@ def oil_equiv(row, unit_conversions):
 
 # ========== CHART COMPONENTS ==========
 
-def make_pie_chart(df):
-    """if not selected_field:
-        return dmc.DonutChart(data=[])
-
-    #field_df = df[df["field"] == selected_field].copy()"""
-    df = df.groupby("product")["volume_net_converted"].sum().reset_index().copy()
-
-    pie_data, total_oil_eq = [], 0
-    for _, row in df.iterrows():
-        vol = row["volume_net_converted"]
-        if vol == 0:
-            continue
-        factor, _ = get_conversion_factor(row["product"], "tonnes of oil equivalent", 0)
-        oil_eq = vol * factor
-        pie_data.append({
-            "name": row["product"],
-            "value": oil_eq,
-            "color": COLOUR_MAP[row["product"]]
-        })
-        total_oil_eq += oil_eq
-        
-    factor, unit = human_format(total_oil_eq/10, return_list=True)
-    for item in pie_data:
-        item["value"] = custom_round(item["value"]/factor, 2)
+def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_unit):
+    filtered_total_extracted = filtered[
+        filtered["product"] == product
+    ]["volume_net"].sum()
     
-    total_oil_eq = custom_round(total_oil_eq/factor, 2)
+    if selected_field is not None:
+        df = df[df["field"] == selected_field].copy()
+    
+    total_extracted = df[
+        df["product"] == product
+    ]["volume_net"].sum()
+    
+    if selected_field is None:
+        org_res = df_reserves[RESERVE_ORG_PREFIX + product].sum()
+    else:
+        org_res = df_reserves.loc[df_reserves["fldName"] == selected_field, RESERVE_ORG_PREFIX + product].sum()
+
+    factor, _ = get_conversion_factor(product, product_unit, 0)
+    magnitude, unit = human_format(org_res*factor/10, return_list=True)
+    
+    pie_data = []
+    if filtered_total_extracted != total_extracted:
+        pie_data.append(
+                {
+                "name": "Extracted prior to selected period",
+                "value": custom_round((total_extracted-filtered_total_extracted)*factor/magnitude,2),
+                "color": "gray.8"
+            }
+        )
+    
+    pie_data.append(
+        {
+            "name": "Extracted",
+            "value": custom_round((filtered_total_extracted)*factor/magnitude,2),
+            "color": COLOUR_MAP[product]
+        }
+    )
+    
+    pie_data.append(
+        {
+            "name": "Remaining Reserves",
+            "value": custom_round((org_res - total_extracted)*factor/magnitude,2),
+            "color": "gray.6"
+        }
+    )
+    
+    total = custom_round((org_res)*factor/magnitude,2)
+    
 
     return dmc.DonutChart(
         data=pie_data,
         thickness=25,
+        size= 250,
         withTooltip=True,
         withLabelsLine=True,
-        chartLabel=f"{total_oil_eq} {unit} t.o.e."
+        chartLabel=f"{total} {unit} {product_unit}"
     )
 
-def make_stacked_area_chart(df, granularity, unit_conversions, window_height):
-    chart_height = int(0.3 * window_height) - 20 if window_height else 200
-
-    df = df.copy()
-    df["oil_equivalent"] = df.apply(lambda r: oil_equiv(r, unit_conversions), axis=1)
-
-    if granularity == "annual":
-        df["date"] = df["date"].dt.year.astype(str)
-    else:
-        df["date"] = df["date"].dt.strftime("%Y-%m")
-
-    grouped = df.groupby(["date", "product"])["oil_equivalent"].sum().reset_index()
-    totals = grouped.groupby("product")["oil_equivalent"].sum()
-    products = [p for p in ["Oil", "NGL", "Condensate", "Gas"] if p in totals and totals[p] > 0]
+def make_stacked_area_chart(df, granularity, unit_conversions, window_height, products, unit_gas, unit_oil, clickData):   
     
-    factor, unit = human_format(grouped.groupby("date")["oil_equivalent"].sum().max()/10,return_list=True)
+    # Group by month or year
+    if granularity == "annual":
+        df["year"] = df["date"].dt.year
+        ts_data = (
+            df.groupby(["year", "product"])[["volume_net_converted", "volume_net"]]
+            .sum()
+            .reset_index()
+            .rename(columns={"year": "date"})
+        )
+        ts_data["date"] = pd.to_datetime(ts_data["date"], format="%Y")
+    else:
+        ts_data = (
+            df.groupby(["date", "product"])[["volume_net_converted","volume_net"]]
+            .sum()
+            .reset_index()
+        )
+    
+    
+    
+    # If gas and other products, force oil equivalent as unit.
+    if "Gas" in products and len(products) > 1:
+        unit = "tonnes of oil equivalent"
+    elif "Gas" not in products:
+        unit = unit_oil
+    else:
+        unit = unit_gas
+        
+    for product in products:
+        factor, unit_label = get_conversion_factor(product, unit, 0)
+        ts_data.loc[ts_data["product"] == product, "volume_net_converted"] = (ts_data.loc[ts_data["product"] == product, "volume_net"] * factor)
+    
+    
+        
+    grouped = ts_data.groupby(["date", "product"])["volume_net_converted"].sum().reset_index()
+    #remove products that are null
+    totals_p = grouped.groupby("product")["volume_net_converted"].sum()
+    products = [p for p in products if p in totals_p and totals_p[p] > 0]
+    ts_data = ts_data[ts_data["product"].isin(products)]
+    #scale values for readability
+    totals_d_max = grouped.groupby("date")["volume_net_converted"].sum().max()
+    factor, scale = human_format(totals_d_max/10, return_list=True)
+    ts_data["volume_net_converted"] = ts_data["volume_net_converted"].apply(lambda x: custom_round(x/factor,2)) 
 
-    data = grouped[grouped["product"].isin(products)]
-    data["oil_equivalent"] /= factor
-    data["oil_equivalent"] = data["oil_equivalent"].apply((lambda x: custom_round(x,2) ))
-    pivoted = data.pivot(index="date", columns="product", values="oil_equivalent").fillna(0).reset_index()
-    records = pivoted.to_dict(orient="records")
+    y_label = f"Net Production ({scale} {unit_label})" if unit_label else "Net Production"
 
-    series = [{"name": p, "color": COLOUR_MAP[p]} for p in products]
-
-    return dmc.AreaChart(
-        dataKey="date",
-        data=records,
-        series=series,
-        type="stacked",
-        h=chart_height,
-        curveType="Linear",
-        tickLine="xy",
-        gridAxis="x",
-        withGradient=False,
-        withXAxis=True,
-        withYAxis=True,
-        withDots=False,
-        withLegend=True,
-        yAxisLabel=f"{unit} Tonnes of Oil Equivalent"
+    time_fig = px.area(
+        ts_data, 
+        x="date", 
+        y="volume_net_converted",
+        color="product",
+        labels={"volume_net_converted": y_label, "date": "Date"},
+        color_discrete_map=COLOUR_MAP,
+        category_orders={"product": products}
     )
+
+
+    # Shared layout
+    time_fig.update_layout(
+        margin=dict(l=40, r=20, t=40, b=30),
+        font=dict(size=12),
+        legend=dict(orientation="h", y=-0.25)
+    )
+
+    # Highlight current date on time series
+    if clickData and "points" in clickData:
+        selected_date = pd.to_datetime(clickData["points"][0]["x"])
+    else:
+        selected_date = ts_data["date"].max()
+
+    time_fig.add_shape(
+        type="line",
+        x0=selected_date, x1=selected_date,
+        y0=0, y1=1,
+        xref='x', yref='paper',
+        line=dict(color="red", width=2, dash="dot")
+    )
+
+    time_fig.add_annotation(
+        x=selected_date,
+        y=1.02,
+        xref='x',
+        yref='paper',
+        text="Map",
+        showarrow=False,
+        font=dict(size=12, color="red"),
+        bgcolor="white",
+        bordercolor="red",
+        borderwidth=1,
+        borderpad=2
+    )
+    
+    return time_fig, selected_date
     
 # ========== MAP ================
 
-def make_map_figure(df, selected_field, product, granularity, selected_date, unit_oil, unit_gas):
+def make_map_figure(df, selected_field, products, granularity, selected_date, unit_oil, unit_gas):
     if granularity == "annual":
         map_df = df[
-            (df["product"] == product) &
             (df["date"].dt.year == selected_date.year)
         ]
         map_df["date_str"] = f"{selected_date.year}"
     else:
         map_df = df[
-            (df["product"] == product) &
             (df["date"] == selected_date)
         ]
         map_df["date_str"] = selected_date.strftime("%Y-%m")
 
-    # Get conversion factor based on product type
-    factor, _ = get_conversion_factor(product, unit_oil if product in ["Oil", "Condensate", "NGL"] else unit_gas, 1)
+    map_df["volume_net_converted"] = map_df["volume_net"].copy()
+    for product in products:
+        factor, _ = get_conversion_factor(product, "tonnes of oil equivalent", 0)
+        map_df[map_df["product"] == product]["volume_net_converted"] = map_df[map_df["product"] == product]["volume_net"]*factor
 
     # Style markers
-    map_df["volume_net"] *= factor
-    map_df["opacity_val"] = map_df["field"].apply(lambda f: 1 if f == selected_field else 0.1)
-    map_df["marker_color"] = map_df["field"].apply(lambda f: COLOUR_MAP.get(product, "#cccccc") if f != selected_field else "#ff0000")
+    if selected_field == None:
+        map_df["opacity_val"] = 0.2
+        map_df["marker_color"] = "#0800ff"
+    else:
+        map_df["opacity_val"] = map_df["field"].apply(lambda f: 1 if f == selected_field else 0.01)
+        map_df["marker_color"] = map_df["field"].apply(lambda f: "#0800ff" if f != selected_field else "#ff0000")
 
     # Build the map figure
     fig = px.scatter_mapbox(
         map_df,
         lat="avg_lat",
         lon="avg_lon",
-        size="volume_net",
+        size="volume_net_converted",
         hover_name="field",
         title=f"{product} Production by Field ({map_df['date_str'].iloc[0]})",
         mapbox_style="carto-positron",
@@ -167,7 +248,8 @@ def make_map_figure(df, selected_field, product, granularity, selected_date, uni
 
 # ========== CALLBACKS ==========
 
-def register_callbacks(app, df):
+def register_callbacks(app, df, df_reserves):
+    
     @app.callback(
         Output("month-picker-container", "style"),
         Output("year-picker-container", "style"),
@@ -176,6 +258,7 @@ def register_callbacks(app, df):
     def toggle_date_inputs(granularity):
         return ({}, {"display": "none"}) if granularity == "monthly" else ({"display": "none"}, {})
 
+    #Drawer
     @app.callback(
         Output("drawer", "opened"),
         Input("drawer-button", "n_clicks"),
@@ -184,10 +267,14 @@ def register_callbacks(app, df):
     def drawer_demo(n_clicks):
         return True
 
+    #Main Callback
     @app.callback(
         [Output("map-view", "figure"),
-         Output("field-pie-chart", "children"),
-         Output("field-mini-timeseries", "children")],
+         Output("field-mini-timeseries", "figure"),
+         Output("pie-chart-oil", "children"),
+         Output("pie-chart-gas", "children"),
+         Output("pie-chart-ngl", "children"),
+         Output("pie-chart-condensate", "children"),],
         [Input("product-filter", "value"),
          Input("granularity-toggle", "value"),
          Input("field-filter", "value"),
@@ -195,9 +282,19 @@ def register_callbacks(app, df):
          Input("unit-gas", "value"),
          Input({"type": "date-picker", "subtype": "month"}, "value"),
          Input({"type": "date-picker", "subtype": "year"}, "value"),
-         Input("window-height", "data")]
+         Input("window-height", "data"),
+         Input("field-mini-timeseries", "clickData")]
     )
-    def update_graphs(products, granularity, selected_field, unit_oil, unit_gas, month_range, year_range, window_height):
+    def update_graphs(products, granularity, selected_field, unit_oil, unit_gas, month_range, year_range, window_height, clickData):
+        
+        #Order products
+        tmp_products = []
+        for product in ["Oil", "NGL", "Condensate", "Gas"]:
+            if product in products:
+                tmp_products.append(product)
+                
+        products = tmp_products
+        del tmp_products
         
         date_range = year_range if granularity == "annual" else month_range
         if date_range is None or len(date_range) != 2:
@@ -211,7 +308,7 @@ def register_callbacks(app, df):
         ]
         
         if selected_field == "All":
-            selected_field = None,
+            selected_field = None
         else:
             filtered = filtered[filtered["field"] == selected_field]
         
@@ -219,20 +316,25 @@ def register_callbacks(app, df):
         # Get conversion factor based on product type
         filtered["volume_net_converted"] = filtered["volume_net"]
         for product in products:
-            factor, _ = get_conversion_factor(product, unit_gas if product == "Gas" else unit_oil, 1)
+            factor, _ = get_conversion_factor(product, unit_gas if product == "Gas" else unit_oil, 0)
 
             # Style markers
             filtered[filtered["product"] == product]["volume_net_converted"] *= factor
         
         
+        # === Donut + Timeseries ===
+        pie_fig_oil = make_pie_chart(filtered, df, df_reserves, "Oil", selected_field, unit_oil)
+        pie_fig_gas = make_pie_chart(filtered, df, df_reserves, "Gas", selected_field, unit_gas)
+        pie_fig_condensate = make_pie_chart(filtered, df, df_reserves, "Condensate", selected_field, unit_oil)
+        pie_fig_ngl = make_pie_chart(filtered, df, df_reserves, "NGL", selected_field, unit_oil)
         
+        mini_ts_fig, selected_date = make_stacked_area_chart(filtered, granularity, UNIT_CONVERSIONS, window_height, products, unit_gas, unit_oil, clickData)
 
         # === Map ===
-        selected_date = end_date
-        map_fig = make_map_figure(df, selected_field, product, granularity, selected_date, unit_oil, unit_gas)
+        if selected_date is None:
+            selected_date = end_date
+        map_fig = make_map_figure(df, selected_field, products, granularity, selected_date, unit_oil, unit_gas)
 
-        # === Donut + Timeseries ===
-        pie_fig = make_pie_chart(filtered)
-        mini_ts_fig = make_stacked_area_chart(filtered, granularity, UNIT_CONVERSIONS, window_height)
+        
 
-        return map_fig, pie_fig, mini_ts_fig
+        return map_fig, mini_ts_fig, pie_fig_oil, pie_fig_gas, pie_fig_ngl, pie_fig_condensate
