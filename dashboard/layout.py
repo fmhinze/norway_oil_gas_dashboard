@@ -5,32 +5,22 @@ import dash_mantine_components as dmc
 
 pio.templates.default = "plotly_dark"
 
-
 def serve_layout(df):
-    return html.Div(
-        [
-            # to get the screen size.
-            dcc.Store(id="window-height", storage_type="session"),
-            html.Div(
-                [
-                    # AREA TOP LEFT - Info & Settings
+    return html.Div([
+        dcc.Store(id="window-height", storage_type="session"),
+        
+        dmc.Stack(  # Full vertical stack
+            children=[
+
+                # --- TOP AREA (70%) ---
+                html.Div([
+                    # LEFT: Drawer and field settings
                     dmc.Box(
-                        dmc.Stack(
-                            children=[
-                                dmc.Button("Selections", id="drawer-button", size="m"),
-                                dmc.Text("Space for non-numerical data. \n Comming soon...")
-                            ],
-                        ),
-                        w="20%",
-                        mah="70%",
-                        mih="70%",
-                        p="10px",
-                        bd="1px solid dark.4",
-                    ),
-                    dmc.Box(
-                        [
+                        dmc.Stack([
+                            dmc.Button("Selections", id="drawer-button", size="m"),
+                            dmc.Text("Space for non-numerical data. \n Comming soon..."),
                             dmc.Drawer(
-                                title="Dashboar Settings",
+                                title="Dashboard Settings",
                                 id="drawer",
                                 padding="md",
                                 children=[
@@ -167,83 +157,102 @@ def serve_layout(df):
                                         ),
                                         id="year-picker-container",
                                     ),
-                                ],
+                                ],  # your existing filters here
                             ),
-                            dmc.Grid(
-                                children = [
-                                    card_for_product("pie-chart-oil", "Oil"),
-                                    card_for_product("pie-chart-gas", "Gas"),
-                                    card_for_product("pie-chart-ngl", "NGL"),
-                                    card_for_product("pie-chart-condensate", "Condensate")
-                                ]
-                            )
-                        ],
-                        mih="70%",
-                        mah="70%",
+                        ]),
+                        w="20%",
+                        p="10px",
+                        style={"border": "1px solid #444"}
+                    ),
+
+                    # MIDDLE: Pie cards
+                    dmc.Box(
+                        dmc.Group(
+                            children=[
+                                card_for_product("pie-chart-oil", "Oil"),
+                                card_for_product("pie-chart-gas", "Gas"),
+                                card_for_product("pie-chart-ngl", "NGL"),
+                                card_for_product("pie-chart-condensate", "Condensate"),
+                            ],
+                            grow=True
+                        ),
                         w="60%",
                         p="10px",
-                        bd="1px solid dark.4",
+                        style={"border": "1px solid #444"}
                     ),
-                    # Map Container
+
+                    # RIGHT: Map
                     dmc.Box(
                         dcc.Graph(
                             id="map-view",
                             style={
-                                "height": "70vh",
+                                "height": "100%",
                                 "margin": "0px",
-                                "backgroundColor": "#1e1e1e00",  # dark background
+                                "backgroundColor": "#1e1e1e00",
                                 "border": "1px solid #444",
                                 "borderRadius": "5px",
                                 "padding": "0px",
                             },
                             config={
-                                "displayModeBar": "hover",  # Hide the floating toolbar
+                                "displayModeBar": "hover",
                                 "responsive": True,
                             },
                         ),
                         w="20%",
-                        h="70%",
                         p="10px",
-                        bd="1px solid dark.4",
+                        style={"border": "1px solid #444"}
                     ),
-                ],
-                style={"display": "flex", "height": "70%", "width": "100%"},
-            ),
-            dmc.Box(
-                [
-                    dcc.Graph(id="field-mini-timeseries", 
+
+                ], style={
+                    "display": "flex",
+                    "flexBasis": "70%",
+                    "flexGrow": 0,
+                    "flexShrink": 0,
+                    "width": "100%",
+                }),
+
+                # --- BOTTOM AREA (30%) ---
+                html.Div([
+                    dcc.Graph(
+                        id="field-mini-timeseries",
                         style={
-                        "height": "30vh",
-                        "margin": "0px"
+                            "height": "100%",
+                            "margin": "0px",
                         }
                     )
-                ],
-                w = "100%",
-                h = "30%"
-            ),
-        ]
-    )
+                ], style={
+                    "flexBasis": "30%",
+                    "flexGrow": 0,
+                    "flexShrink": 0,
+                    "width": "100%",
+                }),
+
+            ],
+            style={"height": "100vh"}  # full screen height
+        )
+    ])
 
 
 def card_for_product(pie_chart_id, product):
     
-    card = dmc.Center(
-        children=[
+    card = dmc.Box(
+        [
             dmc.Stack(
                 children=[
                     dmc.Title(product),
                     dmc.Paper(
                         children=[html.Div(id=pie_chart_id)],
                     ),    
-                ]
-            ),  
+                ],
+                align="center",
+	            justify="space-around",
+            )
         ],
-        mih = "50%",
-        mah = "50%",
-        miw = "50%",
-        maw = "50%",
-        p="5px",
+        h = "50%",
+        w = "50%",
+        p="0px",
         bd="1px solid dark.4",
     )
+    
     
     return card

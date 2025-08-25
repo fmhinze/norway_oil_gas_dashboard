@@ -40,7 +40,7 @@ def oil_equiv(row, unit_conversions):
 
 # ========== CHART COMPONENTS ==========
 
-def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_unit):
+def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_unit, window_height):
     filtered_total_extracted = filtered[
         filtered["product"] == product
     ]["volume_net"].sum()
@@ -53,12 +53,12 @@ def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_u
     ]["volume_net"].sum()
     
     if selected_field is None:
-        org_res = df_reserves[RESERVE_ORG_PREFIX + product].sum()
+        remain_res = df_reserves[RESERVE_REMAIN_PREFIX + product].sum()
     else:
-        org_res = df_reserves.loc[df_reserves["fldName"] == selected_field, RESERVE_ORG_PREFIX + product].sum()
+        remain_res = df_reserves.loc[df_reserves["fldName"] == selected_field, RESERVE_REMAIN_PREFIX + product].sum()
 
     factor, _ = get_conversion_factor(product, product_unit, 0)
-    magnitude, unit = human_format(org_res*factor/10, return_list=True)
+    magnitude, unit = human_format((remain_res+total_extracted)*factor/10, return_list=True)
     
     pie_data = []
     if filtered_total_extracted != total_extracted:
@@ -81,21 +81,25 @@ def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_u
     pie_data.append(
         {
             "name": "Remaining Reserves",
-            "value": custom_round((org_res - total_extracted)*factor/magnitude,2),
+            "value": custom_round((remain_res)*factor/magnitude,2),
             "color": "gray.6"
         }
     )
     
-    total = custom_round((org_res)*factor/magnitude,2)
+    total = custom_round((remain_res + total_extracted)*factor/magnitude,2)
     
+    chart_hieght = window_height*0.10
 
-    return dmc.DonutChart(
-        data=pie_data,
-        thickness=25,
-        size= 250,
-        withTooltip=True,
+    return dmc.PieChart(
+        data = pie_data,
+        size = chart_hieght,
+        withLabels=True,
         withLabelsLine=True,
-        chartLabel=f"{total} {unit} {product_unit}"
+        labelsPosition="outside",
+        labelsType="value",
+        strokeWidth=1,
+        withTooltip=True,
+        #chartLabel = f"{total} {unit} {product_unit}"
     )
 
 def make_stacked_area_chart(df, granularity, unit_conversions, window_height, products, unit_gas, unit_oil, clickData):   
@@ -323,10 +327,10 @@ def register_callbacks(app, df, df_reserves):
         
         
         # === Donut + Timeseries ===
-        pie_fig_oil = make_pie_chart(filtered, df, df_reserves, "Oil", selected_field, unit_oil)
-        pie_fig_gas = make_pie_chart(filtered, df, df_reserves, "Gas", selected_field, unit_gas)
-        pie_fig_condensate = make_pie_chart(filtered, df, df_reserves, "Condensate", selected_field, unit_oil)
-        pie_fig_ngl = make_pie_chart(filtered, df, df_reserves, "NGL", selected_field, unit_oil)
+        pie_fig_oil = make_pie_chart(filtered, df, df_reserves, "Oil", selected_field, unit_oil, window_height)
+        pie_fig_gas = make_pie_chart(filtered, df, df_reserves, "Gas", selected_field, unit_gas, window_height)
+        pie_fig_condensate = make_pie_chart(filtered, df, df_reserves, "Condensate", selected_field, unit_oil, window_height)
+        pie_fig_ngl = make_pie_chart(filtered, df, df_reserves, "NGL", selected_field, unit_oil, window_height)
         
         mini_ts_fig, selected_date = make_stacked_area_chart(filtered, granularity, UNIT_CONVERSIONS, window_height, products, unit_gas, unit_oil, clickData)
 
