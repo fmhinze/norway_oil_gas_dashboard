@@ -14,6 +14,13 @@ COLOUR_MAP = {
     "Gas": "#90e0ef"
 }
 
+USE_UNIT = {
+    "Oil":"Oil",
+    "Gas":"Gas",
+    "NGL":"Oil",
+    "Condensate":"Oil"
+}
+
 with open("processed_data/unit_conversion.json", "r") as f:
     UNIT_CONVERSIONS = json.load(f)
     
@@ -23,8 +30,8 @@ RESERVE_REMAIN_PREFIX = "fldRemaining"
 # ========== UTILITY FUNCTIONS ==========
 
 def get_conversion_factor(product, unit_choice, max_value):
-    if product in UNIT_CONVERSIONS:
-        for entry in UNIT_CONVERSIONS[product][unit_choice]:
+    if product in USE_UNIT:
+        for entry in UNIT_CONVERSIONS[USE_UNIT[product]][unit_choice]:
             if max_value * entry["factor"] > 1:
                 break
         return entry["factor"], entry["unit"]
@@ -57,8 +64,8 @@ def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_u
     else:
         remain_res = df_reserves.loc[df_reserves["fldName"] == selected_field, RESERVE_REMAIN_PREFIX + product].sum()
 
-    factor, _ = get_conversion_factor(product, product_unit, 0)
-    magnitude, unit = human_format((remain_res+total_extracted)*factor/10, return_list=True)
+    factor, unit = get_conversion_factor(product, product_unit, remain_res+total_extracted)
+    magnitude, multiplier = human_format((remain_res+total_extracted)*factor, return_list=True)
     
     pie_data = []
     if filtered_total_extracted != total_extracted:
@@ -72,7 +79,7 @@ def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_u
     
     pie_data.append(
         {
-            "name": f"Extracted ({unit} {product_unit})",
+            "name": f"Extracted ({multiplier}{unit})",
             "value": custom_round((filtered_total_extracted)*factor/magnitude,2),
             "color": COLOUR_MAP[product]
         }
@@ -80,7 +87,7 @@ def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_u
     
     pie_data.append(
         {
-            "name": f"Remaining ({unit} {product_unit})",
+            "name": f"Remaining ({multiplier}{unit})",
             "value": custom_round((remain_res)*factor/magnitude,2),
             "color": "gray.6"
         }
@@ -134,7 +141,7 @@ def make_stacked_area_chart(df, granularity, unit_conversions, window_height, pr
         unit = unit_gas
         
     for product in products:
-        factor, unit_label = get_conversion_factor(product, unit, 0)
+        factor, unit_label = get_conversion_factor(product, unit, ts_data["volume_net"].max())
         ts_data.loc[ts_data["product"] == product, "volume_net_converted"] = (ts_data.loc[ts_data["product"] == product, "volume_net"] * factor)
     
     
@@ -149,7 +156,7 @@ def make_stacked_area_chart(df, granularity, unit_conversions, window_height, pr
     factor, scale = human_format(totals_d_max/10, return_list=True)
     ts_data["volume_net_converted"] = ts_data["volume_net_converted"].apply(lambda x: custom_round(x/factor,2)) 
 
-    y_label = f"Net Production ({scale} {unit_label})" if unit_label else "Net Production"
+    y_label = f"Net Production ({scale}{unit_label})" if unit_label else "Net Production"
 
     time_fig = px.area(
         ts_data, 
@@ -212,12 +219,17 @@ def make_map_figure(df, selected_field, products, granularity, selected_date, un
             (df["date"] == selected_date)
         ]
         map_df["date_str"] = selected_date.strftime("%Y-%m")
-
+    
     map_df["volume_net_converted"] = map_df["volume_net"].copy()
     for product in products:
         factor, _ = get_conversion_factor(product, "tonnes of oil equivalent", 0)
         map_df[map_df["product"] == product]["volume_net_converted"] = map_df[map_df["product"] == product]["volume_net"]*factor
+    
 
+    
+    date_lable = map_df['date_str'].iloc[0]
+    map_df = map_df.groupby(["field", "avg_lat","avg_lon", "date_str"])[["volume_net", "volume_net_converted"]].sum().reset_index()
+    
     # Style markers
     if selected_field == None:
         map_df["opacity_val"] = 0.2
@@ -233,11 +245,13 @@ def make_map_figure(df, selected_field, products, granularity, selected_date, un
         lon="avg_lon",
         size="volume_net_converted",
         hover_name="field",
-        title=f"{product} Production by Field ({map_df['date_str'].iloc[0]})",
+        title=f"Production by Field ({date_lable})",
         mapbox_style="carto-positron",
         zoom=3.3,
         center={"lat": 66, "lon": 11},
+        custom_data=["field","volume_net_converted"]
     )
+    fig.update_traces(hovertemplate=f" <b> %{{customdata[0]}} </b>  <br> Volume:  %{{customdata[1]}} t.o.e.")
     fig.update_traces(marker=dict(
         color=map_df["marker_color"],
         opacity=map_df["opacity_val"]

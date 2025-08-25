@@ -10,7 +10,7 @@ def human_format(num, precision=2, return_list = False):
         return "-"
     num = float(num)
     magnitude = 0
-    units = ["", "thousand", "million", "billion", "trillion"]
+    units = ["", "thousand ", "million ", "billion ", "trillion "]
 
     while abs(num) >= 1000 and magnitude < len(units) - 1:
         magnitude += 1
