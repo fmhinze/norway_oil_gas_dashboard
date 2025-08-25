@@ -8,7 +8,7 @@ from utility import human_format, custom_round
 
 # ========== CONSTANTS ==========
 COLOUR_MAP = {
-    "Oil": "#03045e",
+    "Oil": "#3a40fd",
     "NGL": "#0077b6",
     "Condensate": "#00b4d8",
     "Gas": "#90e0ef"
@@ -64,7 +64,7 @@ def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_u
     if filtered_total_extracted != total_extracted:
         pie_data.append(
                 {
-                "name": "Extracted prior to selected period",
+                "name": "Extracted prior/after",
                 "value": custom_round((total_extracted-filtered_total_extracted)*factor/magnitude,2),
                 "color": "gray.8"
             }
@@ -72,7 +72,7 @@ def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_u
     
     pie_data.append(
         {
-            "name": "Extracted",
+            "name": f"Extracted ({unit} {product_unit})",
             "value": custom_round((filtered_total_extracted)*factor/magnitude,2),
             "color": COLOUR_MAP[product]
         }
@@ -80,7 +80,7 @@ def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_u
     
     pie_data.append(
         {
-            "name": "Remaining Reserves",
+            "name": f"Remaining ({unit} {product_unit})",
             "value": custom_round((remain_res)*factor/magnitude,2),
             "color": "gray.6"
         }
@@ -88,7 +88,7 @@ def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_u
     
     total = custom_round((remain_res + total_extracted)*factor/magnitude,2)
     
-    chart_hieght = window_height*0.10
+    chart_hieght = window_height*0.15
 
     return dmc.PieChart(
         data = pie_data,
@@ -99,6 +99,8 @@ def make_pie_chart(filtered, df, df_reserves, product, selected_field, product_u
         labelsType="value",
         strokeWidth=1,
         withTooltip=True,
+        paddingAngle = 0,
+        style={"width": chart_hieght*1.9, "height": chart_hieght*1.9}
         #chartLabel = f"{total} {unit} {product_unit}"
     )
 
