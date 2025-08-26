@@ -320,12 +320,19 @@ def register_callbacks(app, df, df_reserves):
         if date_range is None or len(date_range) != 2:
             date_range = [df["date"].min(), df["date"].max()]
         start_date, end_date = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
-
-        filtered = df[
-            (df["product"].isin(products)) &
-            (df["date"] >= start_date) &
-            (df["date"] <= end_date)
-        ]
+        
+        if granularity == "annual":
+            filtered = df[
+                (df["product"].isin(products)) &
+                (df["date"].apply(lambda x: x.year) >= start_date.year) &
+                (df["date"].apply(lambda x: x.year) <= end_date.year)
+            ]
+        else:
+            filtered = df[
+                (df["product"].isin(products)) &
+                (df["date"] >= start_date) &
+                (df["date"] <= end_date)
+            ]
         
         if selected_field == "All":
             selected_field = None
